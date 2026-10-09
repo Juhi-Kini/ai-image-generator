@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}About — AI Prompt Generator{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2">ℹ️ About This Project</h1>
+    <p class="text-gray-400 mb-8">Understanding the Applied AI concepts behind the AI Prompt Generator</p>
+
+    <!-- Project Overview -->
+    <div class="card p-6 mb-6">
+        <h2 class="text-xl font-bold text-accent-purple mb-3">🎯 Project Overview</h2>
+        <p class="text-gray-300 leading-relaxed">
+            The <strong>AI Text-to-Image Prompt Generator</strong> is a mini web application that demonstrates
+            key concepts from <strong>Applied Artificial Intelligence (AAI)</strong>. It transforms simple,
+            natural language descriptions into optimized, detailed prompts suitable for AI image generation
+            tools like DALL·E, Stable Diffusion, and Midjourney.
+        </p>
+    </div>
+
+    <!-- AAI Concepts -->
+    <div class="card p-6 mb-6">
+        <h2 class="text-xl font-bold text-accent-pink mb-4">🧠 Applied AI Concepts Used</h2>
+        <div class="space-y-5">
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <h3 class="font-semibold text-accent-cyan mb-2">1. Prompt Engineering</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Prompt engineering is the art of crafting effective inputs for AI models. This application
+                    uses <strong>template-based prompt engineering</strong> to systematically enhance user descriptions
+                    with style-specific modifiers, lighting descriptors, mood keywords, and quality boosters that
+                    are known to produce better results in diffusion-based image models.
+                </p>
+            </div>
+
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <h3 class="font-semibold text-accent-cyan mb-2">2. Natural Language Processing (NLP)</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    The system parses and processes natural language input from users, understanding the semantic
+                    intent and restructuring it into a format optimized for AI consumption. This includes
+                    text normalization, keyword extraction, and contextual augmentation.
+                </p>
+            </div>
+
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <h3 class="font-semibold text-accent-cyan mb-2">3. Knowledge-Based / Rule-Based AI System</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    The prompt engine operates as a <strong>knowledge-based system</strong> containing curated
+                    domain knowledge about art styles, lighting techniques, composition rules, and quality
+                    descriptors. It uses rule-based logic to select and combine the most appropriate modifiers
+                    for each style category.
+                </p>
+            </div>
+
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <h3 class="font-semibold text-accent-cyan mb-2">4. Human-AI Interaction (HAI)</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    The application demonstrates effective <strong>human-AI interaction</strong> design principles:
+                    intuitive input interfaces, visual style selection, real-time feedback, contextual tips,
+                    and a gallery view for prompt management. It bridges the gap between human creativity
+                    and AI capability.
+                </p>
+            </div>
+
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <h3 class="font-semibold text-accent-cyan mb-2">5. Generative AI Workflows</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Understanding how <strong>text-to-image diffusion models</strong> interpret prompts is central
+                    to this project. The system encodes knowledge about how models like Stable Diffusion
+                    weight different keywords, the importance of negative prompts, and how style-specific
+                    tokens influence the generated output.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="card p-6 mb-6">
+        <h2 class="text-xl font-bold text-accent-blue mb-4">🛠️ Technology Stack</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <div class="text-2xl mb-2">🐍</div>
+                <h3 class="font-semibold text-gray-200">Python 3 + Flask</h3>
+                <p class="text-gray-400 text-sm mt-1">Backend web framework handling API routes and prompt generation logic</p>
+            </div>
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <div class="text-2xl mb-2">🗃️</div>
+                <h3 class="font-semibold text-gray-200">SQLite3</h3>
+                <p class="text-gray-400 text-sm mt-1">Lightweight database for storing prompt history, favorites, and statistics</p>
+            </div>
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <div class="text-2xl mb-2">🎨</div>
+                <h3 class="font-semibold text-gray-200">HTML + Tailwind CSS</h3>
+                <p class="text-gray-400 text-sm mt-1">Modern, responsive frontend with dark theme and animated UI components</p>
+            </div>
+            <div class="p-4 bg-dark-900 rounded-xl border border-dark-600">
+                <div class="text-2xl mb-2">⚡</div>
+                <h3 class="font-semibold text-gray-200">JavaScript (Vanilla)</h3>
+                <p class="text-gray-400 text-sm mt-1">Client-side interactivity including AJAX calls, clipboard API, and dynamic rendering</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="card p-6 mb-6">
+        <h2 class="text-xl font-bold text-accent-purple mb-4">⚙️ How It Works</h2>
+        <div class="space-y-3">
+            <div class="flex items-start gap-3">
+                <span class="bg-accent-purple text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                <div>
+                    <h4 class="font-semibold text-gray-200">User Input</h4>
+                    <p class="text-gray-400 text-sm">User types a simple description like "a cat sitting on the moon"</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-accent-pink text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                <div>
+                    <h4 class="font-semibold text-gray-200">Style Selection</h4>
+                    <p class="text-gray-400 text-sm">User chooses an art style (e.g., Photorealistic, Anime, Oil Painting)</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-accent-blue text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                <div>
+                    <h4 class="font-semibold text-gray-200">AI Prompt Engine</h4>
+                    <p class="text-gray-400 text-sm">The engine applies style-specific modifiers, lighting, mood, quality boosters, and aspect ratio tags</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-accent-cyan text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
+                <div>
+                    <h4 class="font-semibold text-gray-200">Output</h4>
+                    <p class="text-gray-400 text-sm">An optimized prompt + negative prompt ready to paste into any AI image generator</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-green-600 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
+                <div>
+                    <h4 class="font-semibold text-gray-200">Storage</h4>
+                    <p class="text-gray-400 text-sm">The prompt is saved to the SQLite database for future reference, search, and favorites</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold text-accent-cyan mb-4">✨ Key Features</h2>
+        <ul class="space-y-2 text-gray-300 text-sm">
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>10 Art Styles</strong> — Photorealistic, Anime, Oil Painting, Watercolor, Cyberpunk, Fantasy, Minimalist, Pixel Art, Pop Art, Pencil Sketch</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Negative Prompt Generation</strong> — Auto-generates exclusion keywords to prevent unwanted artifacts</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Multiple Aspect Ratios</strong> — Square, Portrait, Landscape, Ultra Wide</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Generate All Styles</strong> — Compare prompts across all 10 styles simultaneously</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Prompt History Gallery</strong> — Searchable, filterable archive of all generated prompts</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Favorites System</strong> — Star your best prompts for quick access</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>One-Click Copy</strong> — Instantly copy prompts to clipboard</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-green-400 mt-0.5">✓</span>
+                <span><strong>Contextual Tips</strong> — Style-specific suggestions to improve your descriptions</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

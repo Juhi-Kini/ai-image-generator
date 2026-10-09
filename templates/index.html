@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}AI Prompt Generator — Create AI Images{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-gradient rounded-2xl p-8 mb-8 text-center">
+    <h1 class="text-4xl font-extrabold mb-3">
+        <span class="bg-gradient-to-r from-accent-purple via-accent-pink to-accent-blue bg-clip-text text-transparent">
+            AI Text-to-Image Generator
+        </span>
+    </h1>
+    <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+        Describe your idea in plain English &rarr; get an <strong class="text-gray-200">AI-generated image</strong>
+        powered by Pollinations.ai. Completely free, no API key needed.
+    </p>
+</div>
+
+<!-- Input Section -->
+<div class="card p-6 mb-8">
+    <label class="block text-sm font-semibold text-gray-300 mb-2" for="user-input">
+        ✍️ Describe the image you want to create
+    </label>
+    <textarea
+        id="user-input"
+        rows="3"
+        class="w-full"
+        placeholder="e.g. a cat sitting on the moon, a dragon flying over mountains, a cyberpunk city at night..."
+    ></textarea>
+
+    <!-- Style Selector -->
+    <div class="mt-6">
+        <label class="block text-sm font-semibold text-gray-300 mb-3">🎨 Choose Art Style</label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" id="style-grid">
+            {% for key, style in styles.items() %}
+            <button
+                class="style-btn {% if key == 'photorealistic' %}active{% endif %}"
+                data-style="{{ key }}"
+                onclick="selectStyle('{{ key }}')"
+            >
+                <span class="text-2xl block mb-1">{{ style.icon }}</span>
+                <span class="text-xs font-medium text-gray-300">{{ style.label }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Aspect Ratio -->
+    <div class="mt-5">
+        <label class="block text-sm font-semibold text-gray-300 mb-3">📐 Aspect Ratio</label>
+        <div class="flex flex-wrap gap-2" id="ar-grid">
+            {% for key, ar in aspect_ratios.items() %}
+            <button
+                class="ar-btn {% if key == 'square' %}active{% endif %}"
+                data-ar="{{ key }}"
+                onclick="selectAR('{{ key }}')"
+            >
+                {{ ar.label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Generate Buttons -->
+    <div class="mt-6 flex flex-wrap gap-3">
+        <button class="btn-generate" onclick="generatePrompt()" id="btn-gen">
+            🖼️ Generate Image
+        </button>
+        <button class="btn-generate btn-generate-all" onclick="generateAll()" id="btn-gen-all">
+            🎯 Generate All Styles
+        </button>
+    </div>
+
+    <p class="text-xs text-gray-500 mt-3">
+        ⏱️ Image generation takes 10-30 seconds. Uses <a href="https://pollinations.ai" target="_blank" class="text-accent-purple hover:underline">Pollinations.ai</a> free API.
+        Press <kbd class="bg-dark-600 px-1.5 py-0.5 rounded text-xs">Ctrl+Enter</kbd> to generate.
+    </p>
+</div>
+
+<!-- Loading State -->
+<div id="loading" class="hidden text-center py-12">
+    <div class="spinner mx-auto mb-4" style="width:40px;height:40px;border-width:4px"></div>
+    <p class="text-gray-300 font-medium text-lg">Generating your AI image...</p>
+    <p class="text-gray-500 text-sm mt-1">This takes 10-30 seconds, please wait</p>
+</div>
+
+<!-- Results Container -->
+<div id="results-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

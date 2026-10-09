@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Image Gallery — AI Prompt Generator{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+    <div>
+        <h1 class="text-3xl font-bold">🖼️ Image Gallery</h1>
+        <p class="text-gray-400 mt-1">Browse your AI-generated images and prompts</p>
+    </div>
+    <!-- Stats -->
+    <div id="stats-bar" class="flex gap-3">
+        <div class="stat-card px-4 py-2">
+            <div class="text-xl font-bold text-accent-purple" id="stat-total">-</div>
+            <div class="text-xs text-gray-400">Total</div>
+        </div>
+        <div class="stat-card px-4 py-2">
+            <div class="text-xl font-bold text-accent-pink" id="stat-favs">-</div>
+            <div class="text-xs text-gray-400">Favorites</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card p-4 mb-6">
+    <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <!-- Search -->
+        <div class="flex-1 w-full">
+            <input
+                type="text"
+                id="search-input"
+                placeholder="🔍 Search images by description..."
+                class="w-full"
+                oninput="debounceSearch()"
+            >
+        </div>
+        <!-- Filter buttons -->
+        <div class="flex flex-wrap gap-2" id="filter-bar">
+            <button class="filter-btn active" data-filter="all" onclick="filterHistory('all')">All</button>
+            <button class="filter-btn" data-filter="favorites" onclick="filterHistory('favorites')">⭐ Favorites</button>
+            {% for key, style in styles.items() %}
+            <button class="filter-btn" data-filter="{{ key }}" onclick="filterHistory('{{ key }}')">
+                {{ style.icon }} {{ style.label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Gallery Grid -->
+<div id="history-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <!-- Populated by JS -->
+</div>
+
+<!-- Empty State -->
+<div id="empty-state" class="hidden text-center py-16">
+    <div class="text-6xl mb-4">📭</div>
+    <h3 class="text-xl font-semibold text-gray-300 mb-2">No images yet</h3>
+    <p class="text-gray-500 mb-4">Go to the Generator to create your first AI image!</p>
+    <a href="/" class="btn-generate inline-block">🖼️ Generate Image</a>
+</div>
+
+<!-- Loading -->
+<div id="history-loading" class="text-center py-12">
+    <div class="spinner mx-auto mb-4"></div>
+    <p class="text-gray-400">Loading gallery...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let searchTimeout = null;
+
+async function loadHistory(filter = 'all', search = '') {
+    const loadingEl = document.getElementById('history-loading');
+    const gridEl = document.getElementById('history-grid');
+    const emptyEl = document.getElementById('empty-state');
+
+    loadingEl.classList.remove('hidden');
+    gridEl.innerHTML = '';
+    emptyEl.classList.add('hidden');
+
+    let url = '/api/history?';
+    if (filter === 'favorites') url += 'favorites=true';
+    else if (filter !== 'all') url += `style=${filter}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        loadingEl.classList.add('hidden');
+
+        if (data.length === 0) {
+            emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        data.forEach(p => {
+            gridEl.innerHTML += renderGalleryCard(p);
+        });
+    } catch (err) {
+        loadingEl.classList.add('hidden');
+        gridEl.innerHTML = '<p class="col-span-full text-center text-red-400">Failed to load gallery.</p>';
+    }
+}
+
+function renderGalleryCard(p) {
+    const date = new Date(p.created_at).toLocaleDateString();
+    const favIcon = p.is_favorite ? '⭐' : '☆';
+    const favClass = p.is_favorite ? 'text-yellow-400' : 'text-gray-500';
+    const imageUrl = p.image_url || '';
+
+    return `
+        <div class="history-card flex flex-col" id="card-${p.id}">
+            <!-- Image -->
+            ${imageUrl ? `
+            <div class="rounded-lg overflow-hidden border border-dark-600 mb-3 bg-dark-900 relative group">
+                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.user_input)}"
+                     class="w-full h-56 object-cover"
+                     loading="lazy"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%231a1a2e%22 width=%22400%22 height=%22300%22/><text fill=%22%234a5568%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22>Image unavailable</text></svg>'"
+                >
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <a href="${escapeHtml(imageUrl)}" download class="btn-copy text-xs">⬇️ Download</a>
+                    <a href="${escapeHtml(imageUrl)}" target="_blank" class="btn-copy text-xs">🔗 Open</a>
+                </div>
+            </div>
+            ` : `
+            <div class="rounded-lg border border-dark-600 mb-3 bg-dark-900 h-56 flex items-center justify-center text-gray-500 text-sm">
+                No image
+            </div>
+            `}
+
+            <!-- Meta -->
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex gap-1 flex-wrap">
+                    <span class="badge bg-dark-600 text-accent-purple text-xs">${escapeHtml(p.style_label)}</span>
+                    <span class="text-xs text-gray-500">${date}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button class="btn-fav ${favClass}" onclick="toggleFav(${p.id})">${favIcon}</button>
+                    <button class="text-gray-500 hover:text-red-400 transition-colors text-sm" onclick="deletePrompt(${p.id})">🗑️</button>
+                </div>
+            </div>
+
+            <!-- User Input -->
+            <p class="text-gray-200 text-sm font-medium mb-2 line-clamp-2">${escapeHtml(p.user_input)}</p>
+
+            <!-- Expandable Prompt -->
+            <details class="mt-auto">
+                <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors">
+                    Show prompt details
+                </summary>
+                <div class="mt-2 prompt-output text-xs" style="max-height:100px;overflow:auto">${escapeHtml(p.generated_prompt)}</div>
+                <button class="btn-copy text-xs mt-2 w-full" onclick="copyText(this, \`${escapeForJs(p.generated_prompt)}\`)">
+                    📋 Copy Prompt
+                </button>
+            </details>
+        </div>
+    `;
+}
+
+function filterHistory(filter) {
+    document.querySelectorAll('#filter-bar .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    const search = document.getElementById('search-input').value;
+    loadHistory(filter, search);
+}
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const activeFilter = document.querySelector('#filter-bar .filter-btn.active')?.dataset.filter || 'all';
+        const search = document.getElementById('search-input').value;
+        loadHistory(activeFilter, search);
+    }, 300);
+}
+
+async function toggleFav(id) {
+    try {
+        await fetch(`/api/favorite/${id}`, { method: 'POST' });
+        const activeFilter = document.querySelector('#filter-bar .filter-btn.active')?.dataset.filter || 'all';
+        loadHistory(activeFilter, document.getElementById('search-input').value);
+        loadStats();
+    } catch (err) { console.error(err); }
+}
+
+async function deletePrompt(id) {
+    if (!confirm('Delete this image and prompt?')) return;
+    try {
+        await fetch(`/api/delete/${id}`, { method: 'DELETE' });
+        document.getElementById(`card-${id}`)?.remove();
+        loadStats();
+        showToast('Deleted', 'success');
+    } catch (err) { showToast('Failed to delete', 'error'); }
+}
+
+async function loadStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('stat-total').textContent = data.total_prompts;
+        document.getElementById('stat-favs').textContent = data.favorites;
+    } catch (err) { console.error(err); }
+}
+
+function copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '✅ Copied!';
+        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 Copy Prompt'; }, 2000);
+    });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function escapeForJs(str) {
+    if (!str) return '';
+    return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+loadHistory();
+loadStats();
+</script>
+{% endblock %}
