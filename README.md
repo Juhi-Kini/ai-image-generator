@@ -77,3 +77,13 @@ ai-prompt-generator/
 3. **Knowledge-Based Systems** — Curated domain knowledge for art styles
 4. **Human-AI Interaction** — Intuitive UI design for AI tools
 5. **Generative AI Workflows** — Understanding text-to-image pipelines
+
+
+## Accounts and deployment notes
+
+- Users can register at `/register` and log in at `/login`.
+- Passwords are stored as Werkzeug password hashes, not plain text.
+- Prompt history, favorites, statistics and deletion are scoped to the logged-in user.
+- Set `POLLINATIONS_API_KEY` and a long random `FLASK_SECRET_KEY` in Render's Environment settings.
+- For durable production storage, use a persistent disk for SQLite or migrate to a managed database. Render's ephemeral filesystem may reset on redeploy.
+- Generated image files are currently written under `static/generated`; use persistent/private object storage and an authenticated image-serving route before treating image URLs as confidential.

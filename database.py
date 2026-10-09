@@ -1,195 +1,123 @@
-"""
-SQLite Database Module
-Handles all database operations for storing and retrieving generated prompts.
-"""
-
-import sqlite3
-import os
-from datetime import datetime
+"""SQLite persistence for users and user-owned prompt history."""
+import sqlite3, os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts.db")
 
-
 def get_connection():
-    """Get a database connection with row factory enabled."""
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def init_db():
-    """Initialize the database and create tables if they don't exist."""
     conn = get_connection()
-    cursor = conn.cursor()
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS prompts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        user_input TEXT NOT NULL,
+        style TEXT NOT NULL,
+        style_label TEXT NOT NULL,
+        aspect_ratio TEXT DEFAULT 'Square (1:1)',
+        generated_prompt TEXT NOT NULL,
+        negative_prompt TEXT,
+        image_url TEXT,
+        is_favorite INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )""")
+    cols = {r['name'] for r in c.execute("PRAGMA table_info(prompts)").fetchall()}
+    if 'user_id' not in cols:
+        c.execute("ALTER TABLE prompts ADD COLUMN user_id INTEGER")
+    if 'image_url' not in cols:
+        c.execute("ALTER TABLE prompts ADD COLUMN image_url TEXT")
+    conn.commit()
+    conn.close()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS prompts (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_input      TEXT NOT NULL,
-            style           TEXT NOT NULL,
-            style_label     TEXT NOT NULL,
-            aspect_ratio    TEXT DEFAULT 'Square (1:1)',
-            generated_prompt TEXT NOT NULL,
-            negative_prompt TEXT,
-            image_url       TEXT,
-            is_favorite     INTEGER DEFAULT 0,
-            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Add image_url column if upgrading from old schema
+def create_user(name, email, password):
+    conn = get_connection()
     try:
-        cursor.execute("ALTER TABLE prompts ADD COLUMN image_url TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
+        cur = conn.execute("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)",
+                           (name.strip(), email.strip().lower(), generate_password_hash(password)))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
 
-    conn.commit()
-    conn.close()
-    print(f"[DB] Database initialized at {DATABASE_PATH}")
-
-
-def save_prompt(user_input, style, style_label, aspect_ratio,
-                generated_prompt, negative_prompt, image_url=None):
-    """Save a generated prompt to the database."""
+def get_user_by_email(email):
     conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
-    cursor.execute("""
-        INSERT INTO prompts (user_input, style, style_label, aspect_ratio,
-                             generated_prompt, negative_prompt, image_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (user_input, style, style_label, aspect_ratio,
-          generated_prompt, negative_prompt, image_url))
+def verify_password(user, password):
+    return bool(user and check_password_hash(user['password_hash'], password))
 
-    prompt_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return prompt_id
-
-
-def get_all_prompts(limit=50, offset=0):
-    """Retrieve all prompts ordered by newest first."""
+def save_prompt(user_id, user_input, style, style_label, aspect_ratio, generated_prompt, negative_prompt, image_url=None):
     conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        cur = conn.execute("""INSERT INTO prompts
+        (user_id,user_input,style,style_label,aspect_ratio,generated_prompt,negative_prompt,image_url)
+        VALUES(?,?,?,?,?,?,?,?)""",
+        (user_id,user_input,style,style_label,aspect_ratio,generated_prompt,negative_prompt,image_url))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
 
-    cursor.execute("""
-        SELECT * FROM prompts
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
-    """, (limit, offset))
-
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return rows
-
-
-def get_prompts_by_style(style, limit=50):
-    """Retrieve prompts filtered by style."""
+def _query(sql, args=()):
     conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        return [dict(r) for r in conn.execute(sql, args).fetchall()]
+    finally:
+        conn.close()
 
-    cursor.execute("""
-        SELECT * FROM prompts
-        WHERE style = ?
-        ORDER BY created_at DESC
-        LIMIT ?
-    """, (style, limit))
+def get_all_prompts(user_id, limit=50, offset=0):
+    return _query("SELECT * FROM prompts WHERE user_id=? ORDER BY created_at DESC LIMIT ? OFFSET ?", (user_id,limit,offset))
+def get_prompts_by_style(user_id, style, limit=50):
+    return _query("SELECT * FROM prompts WHERE user_id=? AND style=? ORDER BY created_at DESC LIMIT ?", (user_id,style,limit))
+def get_favorite_prompts(user_id, limit=50):
+    return _query("SELECT * FROM prompts WHERE user_id=? AND is_favorite=1 ORDER BY created_at DESC LIMIT ?", (user_id,limit))
+def search_prompts(user_id, query, limit=50):
+    return _query("SELECT * FROM prompts WHERE user_id=? AND user_input LIKE ? ORDER BY created_at DESC LIMIT ?", (user_id,f"%{query}%",limit))
+def toggle_favorite(user_id, prompt_id):
+    conn=get_connection()
+    try:
+        conn.execute("UPDATE prompts SET is_favorite=CASE WHEN is_favorite=1 THEN 0 ELSE 1 END WHERE id=? AND user_id=?", (prompt_id,user_id))
+        conn.commit()
+        row=conn.execute("SELECT is_favorite FROM prompts WHERE id=? AND user_id=?", (prompt_id,user_id)).fetchone()
+        return dict(row) if row else None
+    finally: conn.close()
+def delete_prompt(user_id, prompt_id):
+    conn=get_connection()
+    try:
+        cur=conn.execute("DELETE FROM prompts WHERE id=? AND user_id=?", (prompt_id,user_id))
+        conn.commit()
+        return cur.rowcount > 0
+    finally: conn.close()
+def get_stats(user_id):
+    conn=get_connection()
+    try:
+        total=conn.execute("SELECT COUNT(*) n FROM prompts WHERE user_id=?", (user_id,)).fetchone()['n']
+        fav=conn.execute("SELECT COUNT(*) n FROM prompts WHERE user_id=? AND is_favorite=1", (user_id,)).fetchone()['n']
+        styles=[dict(r) for r in conn.execute("SELECT style_label,COUNT(*) count FROM prompts WHERE user_id=? GROUP BY style_label ORDER BY count DESC", (user_id,)).fetchall()]
+        return {"total_prompts":total,"favorites":fav,"style_breakdown":styles}
+    finally: conn.close()
 
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return rows
-
-
-def get_favorite_prompts(limit=50):
-    """Retrieve favorite prompts."""
+def owns_image(user_id, image_url):
     conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT * FROM prompts
-        WHERE is_favorite = 1
-        ORDER BY created_at DESC
-        LIMIT ?
-    """, (limit,))
-
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return rows
-
-
-def toggle_favorite(prompt_id):
-    """Toggle the favorite status of a prompt."""
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE prompts
-        SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END
-        WHERE id = ?
-    """, (prompt_id,))
-
-    conn.commit()
-
-    # Return updated status
-    cursor.execute("SELECT is_favorite FROM prompts WHERE id = ?", (prompt_id,))
-    row = cursor.fetchone()
-    conn.close()
-
-    return dict(row) if row else None
-
-
-def delete_prompt(prompt_id):
-    """Delete a prompt by ID."""
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM prompts WHERE id = ?", (prompt_id,))
-    affected = cursor.rowcount
-    conn.commit()
-    conn.close()
-    return affected > 0
-
-
-def search_prompts(query, limit=50):
-    """Search prompts by user input text."""
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT * FROM prompts
-        WHERE user_input LIKE ?
-        ORDER BY created_at DESC
-        LIMIT ?
-    """, (f"%{query}%", limit))
-
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return rows
-
-
-def get_stats():
-    """Get statistics about generated prompts."""
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) as total FROM prompts")
-    total = cursor.fetchone()["total"]
-
-    cursor.execute("""
-        SELECT style_label, COUNT(*) as count
-        FROM prompts
-        GROUP BY style_label
-        ORDER BY count DESC
-    """)
-    style_counts = [dict(row) for row in cursor.fetchall()]
-
-    cursor.execute("SELECT COUNT(*) as fav_count FROM prompts WHERE is_favorite = 1")
-    favorites = cursor.fetchone()["fav_count"]
-
-    conn.close()
-
-    return {
-        "total_prompts": total,
-        "favorites": favorites,
-        "style_breakdown": style_counts
-    }
+    try:
+        row = conn.execute("SELECT 1 FROM prompts WHERE user_id=? AND image_url=? LIMIT 1",
+                           (user_id, image_url)).fetchone()
+        return row is not None
+    finally:
+        conn.close()

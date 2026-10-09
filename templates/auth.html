@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ 'Create account' if mode == 'register' else 'Log in' }} — AI Prompt Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#0f1020;color:#f3f4f6;font-family:Inter,system-ui,sans-serif}
+.panel{background:#191a2d;border:1px solid #303149;border-radius:20px}
+.field{width:100%;background:#101123;border:1px solid #393b55;border-radius:10px;padding:12px;color:#fff;margin-top:6px}
+.btn{background:linear-gradient(90deg,#8b5cf6,#ec4899);padding:12px;border-radius:10px;width:100%;font-weight:700}
+</style></head>
+<body class="min-h-screen flex items-center justify-center p-4">
+<div class="panel w-full max-w-md p-8">
+<div class="text-3xl mb-2">🎨</div>
+<h1 class="text-2xl font-bold mb-2">{{ 'Create your account' if mode == 'register' else 'Welcome back' }}</h1>
+<p class="text-gray-400 mb-6">{{ 'Your prompts and history stay associated with your account.' if mode == 'register' else 'Log in to access your personal prompt history.' }}</p>
+{% if error %}<div class="bg-red-900/40 border border-red-500/40 text-red-200 rounded-lg p-3 mb-4">{{ error }}</div>{% endif %}
+<form method="post">
+{% if mode == 'register' %}
+<label class="block text-sm">Name<input class="field" name="name" maxlength="80" required autocomplete="name"></label>
+{% endif %}
+<label class="block text-sm mt-4">Email<input class="field" name="email" type="email" maxlength="254" required autocomplete="email"></label>
+<label class="block text-sm mt-4">Password<input class="field" name="password" type="password" minlength="8" required autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}"></label>
+{% if mode == 'register' %}
+<label class="block text-sm mt-4">Confirm password<input class="field" name="confirm_password" type="password" minlength="8" required autocomplete="new-password"></label>
+{% endif %}
+<button class="btn mt-6" type="submit">{{ 'Register' if mode == 'register' else 'Log in' }}</button>
+</form>
+<p class="text-center text-sm text-gray-400 mt-6">
+{% if mode == 'register' %}Already have an account? <a class="text-purple-300" href="/login">Log in</a>
+{% else %}New here? <a class="text-purple-300" href="/register">Create an account</a>{% endif %}
+</p></div></body></html>

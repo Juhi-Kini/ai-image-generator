@@ -1,4 +1,6 @@
 .env
+prompts.db
 __pycache__/
 *.pyc
-prompts.db
+static/generated/*
+!static/generated/.gitkeep

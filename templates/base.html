@@ -65,6 +65,10 @@
                        {% if request.endpoint == 'history' %}bg-dark-600 text-white{% else %}text-gray-400 hover:text-white hover:bg-dark-700{% endif %}">
                         📚 History
                     </a>
+                    <span class="text-xs text-gray-400 px-2">Hi, {{ user_name or session.get('user_name', '') }}</span>
+                    <form action="/logout" method="post" class="inline">
+                        <button type="submit" class="nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-dark-700">Log out</button>
+                    </form>
                     <a href="/about" class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-all
                        {% if request.endpoint == 'about' %}bg-dark-600 text-white{% else %}text-gray-400 hover:text-white hover:bg-dark-700{% endif %}">
                         ℹ️ About
